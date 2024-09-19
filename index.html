@@ -6,17 +6,20 @@
     <title>Agenda Diaria con AM/PM</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 639px;
             margin: 0;
             padding: 20px;
             background-color: #0f6357;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
         }
         .container {
             border: solid 2px;
             border-color: black;
             max-width: 600px;
-            margin: 0 auto;
             background-color: #fff;
             padding: 20px;
             border-radius: 20px;
@@ -108,7 +111,7 @@
             display: none;
         }
         .alarm-active {
-            animation: blink 1s infinite;
+            animation: blink 2s infinite;
         }
         @keyframes blink {
             0% { opacity: 1; }
@@ -117,7 +120,7 @@
         }
 
         /* Media queries para dispositivos móviles */
-        @media screen and (max-width: 600px) {
+        @media screen and (min-width: 798px) {
             body {
                 padding: 10px;
             }
