@@ -314,9 +314,9 @@
             const now = new Date();
             const [hours, minutes] = task.time.split(':');
             let alarmHours = parseInt(hours);
-            if (task.ampm === 'PM' && alarmHours !== 12) {
+            if (task.ampm === 'AM' && alarmHours !== 12) {
                 alarmHours += 12;
-            } else if (task.ampm === 'AM' && alarmHours === 12) {
+            } else if (task.ampm === 'PM' && alarmHours === 12) {
                 alarmHours = 0;
             }
             const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), alarmHours, parseInt(minutes));
