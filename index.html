@@ -339,7 +339,6 @@
         function triggerAlarm(task) {
             if (!task.completed) {
                 alarmSound.play();
-                alert(`¡Es hora de tu tarea: ${task.text}!`);
                 const taskElement = document.querySelector(`#task-${task.id}`).closest('li');
                 if (taskElement) {
                     taskElement.classList.add('alarm-active');
