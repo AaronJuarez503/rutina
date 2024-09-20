@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Diaria con AM/PM</title>
+    <title>Agenda Diaria con Scroll Corregida</title>
     <style>
         body {
             display: flex;
@@ -20,10 +20,23 @@
             border: solid 2px;
             border-color: black;
             max-width: 600px;
+            margin: 0 auto;
             background-color: #fff;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 0 100px rgba(94, 219, 241);
+            animation: palpitar 2s infinite;
+        }
+        @keyframes palpitar {
+            0% {
+                box-shadow: 0 0 100px rgba(94, 219, 241, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 120px rgba(94, 219, 241, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 100px rgba(94, 219, 241, 0.5);
+            }
         }
         h1, h2 {
             text-align: center;
@@ -55,11 +68,20 @@
         #taskForm button:hover {
             background-color: #14a08b;
         }
-        #taskList {
+        .taskListContainer {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .taskList {
             list-style-type: none;
             padding: 0;
+            margin: 0;
         }
-        #taskList li {
+        .taskList li {
             background-color: #f9f9f9;
             margin-bottom: 10px;
             padding: 10px;
@@ -69,11 +91,14 @@
             justify-content: space-between;
             flex-wrap: wrap;
         }
-        #taskList li.completed {
+        .taskList li:last-child {
+            margin-bottom: 0;
+        }
+        .taskList li.completed {
             background-color: #d4edda;
             text-decoration: line-through;
         }
-        #taskList li input[type="checkbox"] {
+        .taskList li input[type="checkbox"] {
             margin-right: 10px;
         }
         .task-content {
@@ -105,18 +130,21 @@
             margin-top: 20px;
         }
         #showListBtn:hover, #backBtn:hover {
-            background-color: #17a791;
+            background-color: #14a08b;
         }
         #listView {
             display: none;
         }
         .alarm-active {
-            animation: blink 2s infinite;
+            animation: blink 1s infinite;
         }
         @keyframes blink {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+        #taskCount{
+            color: red;
         }
 
         /* Media queries para dispositivos móviles */
@@ -137,7 +165,7 @@
                 width: 100%;
                 margin-bottom: 10px;
             }
-            #taskList li {
+            .taskList li {
                 flex-direction: column;
                 align-items: flex-start;
             }
@@ -168,7 +196,9 @@
         </div>
         <div id="listView">
             <h2>Lista de Tareas</h2>
-            <ul id="taskList"></ul>
+            <div class="taskListContainer">
+                <ul id="completeTaskList" class="taskList"></ul>
+            </div>
             <button id="backBtn">Volver a Crear Lista</button>
         </div>
     </div>
@@ -179,7 +209,7 @@
         const taskInput = document.getElementById('taskInput');
         const timeInput = document.getElementById('timeInput');
         const ampmSelect = document.getElementById('ampmSelect');
-        const taskList = document.getElementById('taskList');
+        const completeTaskList = document.getElementById('completeTaskList');
         const taskCount = document.getElementById('taskCount');
         const showListBtn = document.getElementById('showListBtn');
         const createView = document.getElementById('createView');
@@ -188,13 +218,14 @@
         const alarmSound = document.getElementById('alarmSound');
 
         let tasks = [];
+        let alarms = {};
 
         function loadTasks() {
             const savedTasks = localStorage.getItem('tasks');
             if (savedTasks) {
                 tasks = JSON.parse(savedTasks);
-                tasks.forEach(task => renderTask(task));
                 updateTaskCount();
+                renderAllTasks();
                 setupExistingAlarms();
             }
         }
@@ -251,25 +282,36 @@
             if (task.completed) {
                 li.classList.add('completed');
             }
-            taskList.appendChild(li);
+            completeTaskList.appendChild(li);
+        }
+
+        function renderAllTasks() {
+            completeTaskList.innerHTML = '';
+            tasks.forEach(task => renderTask(task));
         }
 
         function toggleTask(id) {
             const task = tasks.find(t => t.id === id);
             if (task) {
                 task.completed = !task.completed;
-                const li = taskList.querySelector(`#task-${id}`).closest('li');
+                const li = completeTaskList.querySelector(`#task-${id}`).closest('li');
                 li.classList.toggle('completed');
                 saveTasks();
+                if (task.completed) {
+                    clearAlarm(task.id);
+                } else {
+                    setAlarm(task);
+                }
             }
         }
 
         function deleteTask(id) {
             tasks = tasks.filter(t => t.id !== id);
-            const li = taskList.querySelector(`#task-${id}`).closest('li');
+            const li = completeTaskList.querySelector(`#task-${id}`).closest('li');
             li.remove();
             updateTaskCount();
             saveTasks();
+            clearAlarm(id);
         }
 
         function updateTaskCount() {
@@ -288,6 +330,7 @@
         }
 
         function setAlarm(task) {
+            clearAlarm(task.id);
             const now = new Date();
             const [hours, minutes] = task.time.split(':');
             let alarmHours = parseInt(hours);
@@ -298,38 +341,38 @@
             }
             const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), alarmHours, parseInt(minutes));
             
-            if (alarmTime > now) {
+            if (alarmTime > now && !task.completed) {
                 const timeUntilAlarm = alarmTime.getTime() - now.getTime();
-                setTimeout(() => {
+                alarms[task.id] = setTimeout(() => {
                     triggerAlarm(task);
                 }, timeUntilAlarm);
             }
         }
 
+        function clearAlarm(taskId) {
+            if (alarms[taskId]) {
+                clearTimeout(alarms[taskId]);
+                delete alarms[taskId];
+            }
+        }
+
         function triggerAlarm(task) {
-            alarmSound.play();
-            const taskElement = document.querySelector(`#task-${task.id}`).closest('li');
-            if (taskElement) {
-                taskElement.classList.add('alarm-active');
-                setTimeout(() => {
-                    taskElement.classList.remove('alarm-active');
-                }, 5000);
+            if (!task.completed) {
+                alarmSound.play();
+                alert(`¡Es hora de tu tarea: ${task.text}!`);
+                const taskElement = completeTaskList.querySelector(`#task-${task.id}`).closest('li');
+                if (taskElement) {
+                    taskElement.classList.add('alarm-active');
+                    setTimeout(() => {
+                        taskElement.classList.remove('alarm-active');
+                    }, 5000);
+                }
             }
         }
 
         function setupExistingAlarms() {
-            const now = new Date();
             tasks.forEach(task => {
-                const [hours, minutes] = task.time.split(':');
-                let alarmHours = parseInt(hours);
-                if (task.ampm === 'PM' && alarmHours !== 12) {
-                    alarmHours += 12;
-                } else if (task.ampm === 'AM' && alarmHours === 12) {
-                    alarmHours = 0;
-                }
-                const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), alarmHours, parseInt(minutes));
-                
-                if (alarmTime > now) {
+                if (!task.completed) {
                     setAlarm(task);
                 }
             });
