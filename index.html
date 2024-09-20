@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Diaria con Scroll Corregida</title>
+    <title>Agenda Diaria Mejorada</title>
     <style>
         body {
             display: flex;
@@ -18,12 +18,11 @@
         }
         .container {
             border: solid 2px;
-            border-color: black;
             max-width: 600px;
             margin: 0 auto;
             background-color: #fff;
             padding: 20px;
-            border-radius: 20px;
+            border-radius: 24px;
             box-shadow: 0 0 100px rgba(94, 219, 241);
             animation: palpitar 2s infinite;
         }
@@ -32,7 +31,7 @@
                 box-shadow: 0 0 100px rgba(94, 219, 241, 0.5);
             }
             50% {
-                box-shadow: 0 0 120px rgba(94, 219, 241, 0.8);
+                box-shadow: 0 0 150px rgba(94, 219, 241, 0.8);
             }
             100% {
                 box-shadow: 0 0 100px rgba(94, 219, 241, 0.5);
@@ -68,20 +67,11 @@
         #taskForm button:hover {
             background-color: #14a08b;
         }
-        .taskListContainer {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-        .taskList {
+        #taskList {
             list-style-type: none;
             padding: 0;
-            margin: 0;
         }
-        .taskList li {
+        #taskList li {
             background-color: #f9f9f9;
             margin-bottom: 10px;
             padding: 10px;
@@ -91,14 +81,11 @@
             justify-content: space-between;
             flex-wrap: wrap;
         }
-        .taskList li:last-child {
-            margin-bottom: 0;
-        }
-        .taskList li.completed {
+        #taskList li.completed {
             background-color: #d4edda;
             text-decoration: line-through;
         }
-        .taskList li input[type="checkbox"] {
+        #taskList li input[type="checkbox"] {
             margin-right: 10px;
         }
         .task-content {
@@ -148,7 +135,7 @@
         }
 
         /* Media queries para dispositivos móviles */
-        @media screen and (min-width: 798px) {
+        @media screen and (min-width: 789px) {
             body {
                 padding: 10px;
             }
@@ -165,7 +152,7 @@
                 width: 100%;
                 margin-bottom: 10px;
             }
-            .taskList li {
+            #taskList li {
                 flex-direction: column;
                 align-items: flex-start;
             }
@@ -196,9 +183,7 @@
         </div>
         <div id="listView">
             <h2>Lista de Tareas</h2>
-            <div class="taskListContainer">
-                <ul id="completeTaskList" class="taskList"></ul>
-            </div>
+            <ul id="taskList"></ul>
             <button id="backBtn">Volver a Crear Lista</button>
         </div>
     </div>
@@ -209,7 +194,7 @@
         const taskInput = document.getElementById('taskInput');
         const timeInput = document.getElementById('timeInput');
         const ampmSelect = document.getElementById('ampmSelect');
-        const completeTaskList = document.getElementById('completeTaskList');
+        const taskList = document.getElementById('taskList');
         const taskCount = document.getElementById('taskCount');
         const showListBtn = document.getElementById('showListBtn');
         const createView = document.getElementById('createView');
@@ -224,8 +209,8 @@
             const savedTasks = localStorage.getItem('tasks');
             if (savedTasks) {
                 tasks = JSON.parse(savedTasks);
+                tasks.forEach(task => renderTask(task));
                 updateTaskCount();
-                renderAllTasks();
                 setupExistingAlarms();
             }
         }
@@ -282,19 +267,14 @@
             if (task.completed) {
                 li.classList.add('completed');
             }
-            completeTaskList.appendChild(li);
-        }
-
-        function renderAllTasks() {
-            completeTaskList.innerHTML = '';
-            tasks.forEach(task => renderTask(task));
+            taskList.appendChild(li);
         }
 
         function toggleTask(id) {
             const task = tasks.find(t => t.id === id);
             if (task) {
                 task.completed = !task.completed;
-                const li = completeTaskList.querySelector(`#task-${id}`).closest('li');
+                const li = taskList.querySelector(`#task-${id}`).closest('li');
                 li.classList.toggle('completed');
                 saveTasks();
                 if (task.completed) {
@@ -307,7 +287,7 @@
 
         function deleteTask(id) {
             tasks = tasks.filter(t => t.id !== id);
-            const li = completeTaskList.querySelector(`#task-${id}`).closest('li');
+            const li = taskList.querySelector(`#task-${id}`).closest('li');
             li.remove();
             updateTaskCount();
             saveTasks();
@@ -330,7 +310,7 @@
         }
 
         function setAlarm(task) {
-            clearAlarm(task.id);
+            clearAlarm(task.id); // Limpiar alarma existente si la hay
             const now = new Date();
             const [hours, minutes] = task.time.split(':');
             let alarmHours = parseInt(hours);
@@ -359,7 +339,8 @@
         function triggerAlarm(task) {
             if (!task.completed) {
                 alarmSound.play();
-                const taskElement = completeTaskList.querySelector(`#task-${task.id}`).closest('li');
+                alert(`¡Es hora de tu tarea: ${task.text}!`);
+                const taskElement = document.querySelector(`#task-${task.id}`).closest('li');
                 if (taskElement) {
                     taskElement.classList.add('alarm-active');
                     setTimeout(() => {
